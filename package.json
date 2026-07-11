@@ -2,7 +2,7 @@
     "name": "@webel-technologies/normalize-email",
     "description": "Normalize + and . emails for uniqueness validation",
     "author": "Webelapp Technologies",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "engines": {
         "pnpm": ">=11 <12"
     },
