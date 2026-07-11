@@ -12,12 +12,26 @@ jobs:
     build:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v2
+            - uses: actions/checkout@v6
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 11
+                  run_install: false
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: pnpm
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm test
+            - name: Verify Node 12 package compatibility
+              run: |
+                  mkdir "$RUNNER_TEMP/pack" "$RUNNER_TEMP/extracted"
+                  pnpm pack --pack-destination "$RUNNER_TEMP/pack"
+                  tar -xzf "$RUNNER_TEMP/pack"/*.tgz -C "$RUNNER_TEMP/extracted"
+            - uses: actions/setup-node@v6
               with:
                   node-version: 12
-            - run: npm ci
-            - run: npm test
+            - run: node -e "require(process.env.RUNNER_TEMP + '/extracted/package')('test+alias@gmail.com')"
 
     publish-gpr:
         needs: build
@@ -26,12 +40,17 @@ jobs:
             packages: write
             contents: read
         steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v2
+            - uses: actions/checkout@v6
+            - uses: pnpm/action-setup@v4
               with:
-                  node-version: 12
+                  version: 11
+                  run_install: false
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: pnpm
                   registry-url: https://npm.pkg.github.com/
-            - run: npm ci
-            - run: npm publish
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm publish --no-git-checks
               env:
                   NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
