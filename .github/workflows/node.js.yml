@@ -9,6 +9,7 @@ on:
             - master
             - feature/*
             - bugfix/*
+            - chore/migrate-to-pnpm
     pull_request:
         branches: [master]
 
@@ -16,17 +17,45 @@ jobs:
     build:
         runs-on: ubuntu-latest
 
+        steps:
+            - uses: actions/checkout@v6
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 11.1.0
+                  run_install: false
+            - name: Use Node.js 24
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: pnpm
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm run build --if-present
+            - run: pnpm test
+            - name: Pack
+              run: |
+                  mkdir "$RUNNER_TEMP/pack"
+                  pnpm pack --pack-destination "$RUNNER_TEMP/pack"
+            - uses: actions/upload-artifact@v6
+              with:
+                  name: package-tarball
+                  path: ${{ runner.temp }}/pack/*.tgz
+
+    runtime-compatibility:
+        needs: build
+        runs-on: ubuntu-latest
         strategy:
             matrix:
-                node-version: [18.x]
-                # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
+                node-version: [12.x, 18.x, 24.x]
         steps:
-            - uses: actions/checkout@v2
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v2
+            - uses: actions/download-artifact@v7
+              with:
+                  name: package-tarball
+                  path: package-tarball
+            - uses: actions/setup-node@v6
               with:
                   node-version: ${{ matrix.node-version }}
-            - run: npm i
-            - run: npm run build --if-present
-            - run: npm test
+            - name: Load packaged CommonJS entry point
+              run: |
+                  mkdir extracted
+                  tar -xzf package-tarball/*.tgz -C extracted
+                  node -e "require('./extracted/package')('test+alias@gmail.com')"
