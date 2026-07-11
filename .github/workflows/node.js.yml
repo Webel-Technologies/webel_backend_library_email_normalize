@@ -9,7 +9,6 @@ on:
             - master
             - feature/*
             - bugfix/*
-            - chore/migrate-to-pnpm
     pull_request:
         branches: [master]
 
@@ -21,7 +20,7 @@ jobs:
             - uses: actions/checkout@v6
             - uses: pnpm/action-setup@v4
               with:
-                  version: 11.1.0
+                  version: 11
                   run_install: false
             - name: Use Node.js 24
               uses: actions/setup-node@v6
