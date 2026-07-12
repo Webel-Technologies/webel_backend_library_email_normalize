@@ -1,0 +1,2 @@
+minimumReleaseAgeExclude:
+  - '@webel-technologies/*'
